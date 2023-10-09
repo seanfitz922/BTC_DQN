@@ -32,13 +32,14 @@ class CustomCryptoTradingEnv(gym.Env):
         # Initialize state variables for SMA calculation
         self.sma_window = sma_window
         self.price_history = deque(maxlen=self.sma_window)
-        self.sma = 0.0  # Initialize SMA to zero
+        # Initialize SMA to zero
+        self.sma = 0.0  
 
         # Initialize state variables for tracking trades and profit
         self.num_trades = 0
         self.total_profit = 0.0
 
-        # Initialize other state variables as needed
+        # Initialize other state variables for steps
         self.current_step = 0
         self.max_steps = len(df) - 1
         self.done = False

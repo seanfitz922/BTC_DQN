@@ -2,22 +2,18 @@ import numpy as np
 import pandas as pd
 from custom_env import CustomCryptoTradingEnv
 from dqn_agent import DQNAgent
+from config import batch_size
 
 """
 to-do:
-    -implement exploration rate decay for episilon
+    -(done) move hyperparameters to new file
     -(done) add stopping criteria instead of fixed 1000 episodes
+    -(done) implement exploration rate decay for episilon
     -tune hyper parameters
     -ability to save trained model
     -add data logging as opposed to print(info)
+    -organize files
 """
-
-# Define hyperparameters
-learning_rate = 0.001
-discount_factor = 0.99
-exploration_rate = 0.1
-batch_size = 32
-max_memory = 10000
 
 def train():
     # Load the hourly data and create custom env
@@ -50,11 +46,14 @@ def train():
     # Initial balance
     initial_balance = 10_000
 
-    for _ in range(num_episodes):
+    for episode in range(num_episodes):
         observation = env.reset()
         done = False
         episode_reward = 0.0  # Initialize episode reward
         episode_balance = initial_balance  # Initialize episode balance
+
+        # Update epsilon at the beginning of each episode
+        agent.update_epsilon(episode)
 
         while not done:
             # Choose an action using your DQN agent's policy
