@@ -1,5 +1,6 @@
 import random
 import torch
+import numpy as np
 import torch.optim as optim
 import torch.nn.functional as F
 
@@ -11,15 +12,15 @@ class QTrainer:
         self.tau = tau
         self.batch_size = batch_size
 
-    def tensorize_batch(self, batch):
-        # create tensors
-        states, actions, rewards, next_states, dones = batch
-        states = torch.cat(states)
-        next_states = torch.cat(next_states)
-        actions = torch.tensor(actions, dtype=torch.int64)
-        rewards = torch.tensor(rewards, dtype=torch.float32)
-        dones = torch.tensor(dones, dtype=torch.float32) # done flags 
-        return states, actions, rewards, next_states, dones
+    # def tensorize_batch(self, batch):
+    #     # create tensors
+    #     states, actions, rewards, next_states, dones = batch
+    #     states = torch.cat(states)
+    #     next_states = torch.cat(next_states)
+    #     actions = torch.tensor(actions, dtype=torch.int64)
+    #     rewards = torch.tensor(rewards, dtype=torch.float32)
+    #     dones = torch.tensor(dones, dtype=torch.float32) # done flags 
+    #     return states, actions, rewards, next_states, dones
     
         """ 
             tensors and datatypes taken from: 
@@ -30,17 +31,32 @@ class QTrainer:
         """ 
 
     def calculate_loss(self, batch):
-        states, actions, rewards, next_states, dones = self.tensorize_batch(batch)
-        # Compute Q-values for current and next states
+        
+        states, actions, rewards, next_states, dones = zip(*batch)
+
+        # Convert the elements of the batch to PyTorch tensors directly
+        states = torch.tensor(states, dtype=torch.float32)
+        actions = torch.tensor(actions, dtype=torch.int64)
+        rewards = torch.tensor(rewards, dtype=torch.float32)
+        next_states = torch.tensor(next_states, dtype=torch.float32)
+        dones = torch.tensor(dones, dtype=torch.float32)
+
         q_values = self.model(states)
         next_q_values = self.model(next_states)
+        
 
         # Bellman equation from https://stackoverflow.com/questions/50581232/q-learning-equation-in-deep-q-network
         # Compute the target Q-values using the Bellman equation
-        target_q_values = rewards + (1 - dones) * self.model.discount_factor * next_q_values.max(1)[0]
+        target_q_values = rewards + (1 - dones) * self.discount_factor * next_q_values.max(1)[0]
         predicted_q_values = q_values.gather(1, actions.unsqueeze(1))
 
+        # Calculate the smooth L1 loss
         loss = F.smooth_l1_loss(predicted_q_values, target_q_values.unsqueeze(1))
+        print(loss)
+        
+
+        return loss
+
 
         # MSE loss
         #loss = F.mse_loss(predicted_q_values, target_q_values)
@@ -54,15 +70,14 @@ class QTrainer:
 
         """
 
-        return loss
-
     def train_step(self, memory):
         # Sample random batch of experiences from the replay memory
         if len(memory) < self.batch_size:
             return
 
         batch = random.sample(memory, self.batch_size)
-        loss = self.calculate_loss(batch)
+        loss = self.calculate_loss(batch)  # Pass the entire batch to calculate_loss
+        
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()

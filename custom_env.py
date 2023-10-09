@@ -43,6 +43,26 @@ class CustomCryptoTradingEnv(gym.Env):
         self.max_steps = len(df) - 1
         self.done = False
 
+    def reset(self):
+        # Reset the environment to its initial state and return the initial observation.
+        
+        self.current_step = 0
+        self.done = False
+        self.holding_asset = False
+        self.bought_price = 0.0
+        self.num_trades = 0
+        self.total_profit = 0.0
+
+        # Clear the price history
+        self.price_history.clear()
+
+        # Calculate the initial SMA using the first sma_window values
+        initial_prices = self.df['close'].iloc[:self.sma_window]
+        self.sma = np.mean(initial_prices)
+
+        # Generate and return the initial observation
+        initial_observation = self.df.iloc[self.current_step].values
+        return initial_observation
 
     def should_buy(self, close_price):
         # Determine the buy conditions (close price > SMA)

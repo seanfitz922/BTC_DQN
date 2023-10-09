@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from custom_env import CustomCryptoTradingEnv
 from dqn_agent import DQNAgent
-from config import batch_size
 
 """
 to-do:
@@ -34,11 +33,11 @@ def train():
 
     # Create and initialize DQN agent
     input_size = len(hourly_df.columns)  # open, high, low, close, volume
-    output_size = len(env.action_space)  # buy, sell, hold
+    output_size = env.action_space.n  # buy, sell, hold
     agent = DQNAgent(input_size=input_size, output_size=output_size)
 
     # Training loop
-    num_episodes = 1000  
+    num_episodes = 1000
     # Desired profit threshold
     target_profit = 1_000_000 
     # Minimum acceptable balance
@@ -66,7 +65,7 @@ def train():
             agent.remember(observation, action, reward, new_observation, done)
 
             # Train the agent using experience replay 
-            agent.train(batch_size=batch_size)
+            agent.train_long_memory()
 
             # Update the current observation
             observation = new_observation
@@ -77,6 +76,7 @@ def train():
             # Stopping condition: stop if the agent achieves the target profit or goes below the minimum balance
             if episode_reward >= target_profit or episode_balance < min_balance:
                 done = True
+                print('Stop condition met')
 
             print(info)
 

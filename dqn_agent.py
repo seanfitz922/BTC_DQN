@@ -47,6 +47,7 @@ class DQNAgent:
         if random.uniform(0, 1) < self.epsilon:
             return random.randrange(3)  # Explore: choose a random action (buy, sell, hold)
         else:
+            state = torch.from_numpy(state).float()
             # no_grad() taken from https://pytorch.org/docs/stable/generated/torch.no_grad.html
             with torch.no_grad(): # disable gradient computation
                 q_values = self.policy_net(state)
@@ -55,12 +56,17 @@ class DQNAgent:
 
     def remember(self, state, action, reward, next_state, done):
         # Store the experience in the replay memory
+        
         self.memory.append((state, action, reward, next_state, done))
+        #print("Experience added to memory:", (state, action, reward, next_state, done))
+
 
     def train_long_memory(self):
         if len(self.memory) < self.trainer.batch_size:
             return
+        #print("Contents of memory before training:", self.memory)
         self.trainer.train_step(self.memory)
+
 
     def train_short_memory(self, state, action, reward, next_state, done):
         # Train the model using a single short memory (single step)
