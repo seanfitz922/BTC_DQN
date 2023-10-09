@@ -1,50 +1,72 @@
+import random
 import torch
 import torch.optim as optim
-import torch.nn as nn
 import torch.nn.functional as F
-import random
-import numpy as np
 
 class QTrainer:
-    def __init__(self, model, optimizer_lr):
+    def __init__(self, model, learning_rate, discount_factor, tau, batch_size):
         self.model = model
-        self.optimizer = optim.Adam(model.parameters(), lr=optimizer_lr)
-        self.criterion = nn.MSELoss()
+        self.optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+        self.discount_factor = discount_factor
+        self.tau = tau
+        self.batch_size = batch_size
 
-    def update_q_network(self, batch, target_model, discount_factor):
-        states, actions, rewards, next_states, dones = zip(*batch)
-        states = torch.stack(states)
-        next_states = torch.stack(next_states)
+    def tensorize_batch(self, batch):
+        # create tensors
+        states, actions, rewards, next_states, dones = batch
+        states = torch.cat(states)
+        next_states = torch.cat(next_states)
         actions = torch.tensor(actions, dtype=torch.int64)
         rewards = torch.tensor(rewards, dtype=torch.float32)
-        dones = torch.tensor(dones, dtype=torch.float32)
+        dones = torch.tensor(dones, dtype=torch.float32) # done flags 
+        return states, actions, rewards, next_states, dones
+    
+        """ 
+            tensors and datatypes taken from: 
+            https://pytorch.org/docs/stable/tensors.html
+            https://pytorch.org/docs/stable/generated/torch.cat.html
+            https://www.geeksforgeeks.org/how-to-join-tensors-in-pytorch/
 
-        # Calculate Q-values for current states
+        """ 
+
+    def calculate_loss(self, batch):
+        states, actions, rewards, next_states, dones = self.tensorize_batch(batch)
+        # Compute Q-values for current and next states
         q_values = self.model(states)
-        q_values = q_values.gather(1, actions.unsqueeze(1))
+        next_q_values = self.model(next_states)
 
-        # Calculate target Q-values using the target network
-        next_q_values = target_model(next_states)
-        next_q_values = next_q_values.max(1)[0].detach()
-        target_q_values = rewards + (1 - dones) * discount_factor * next_q_values
+        # Bellman equation from https://stackoverflow.com/questions/50581232/q-learning-equation-in-deep-q-network
+        # Compute the target Q-values using the Bellman equation
+        target_q_values = rewards + (1 - dones) * self.model.discount_factor * next_q_values.max(1)[0]
+        predicted_q_values = q_values.gather(1, actions.unsqueeze(1))
 
-        # Compute the loss
-        loss = self.criterion(q_values, target_q_values.unsqueeze(1))
+        loss = F.smooth_l1_loss(predicted_q_values, target_q_values.unsqueeze(1))
 
-        # Optimize the model
+        # MSE loss
+        #loss = F.mse_loss(predicted_q_values, target_q_values)
+
+        """ 
+            loss taken from https://pytorch.org/docs/stable/generated/torch.nn.functional.smooth_l1_loss.html
+            insight from https://pytorch.org/docs/stable/generated/torch.nn.SmoothL1Loss.html
+            insight from https://www.reddit.com/r/deeplearning/comments/iaw492/huber_loss_vs_mae_loss_in_dqn/
+            insight from https://stats.stackexchange.com/questions/249355/how-exactly-to-compute-deep-q-learning-loss-function
+            insight from https://pytorch.org/docs/stable/generated/torch.unsqueeze.html
+
+        """
+
+        return loss
+
+    def train_step(self, memory):
+        # Sample random batch of experiences from the replay memory
+        if len(memory) < self.batch_size:
+            return
+
+        batch = random.sample(memory, self.batch_size)
+        loss = self.calculate_loss(batch)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-
-    def update_q_network(self, batch):
-        # Calculate Q-values and target Q-values, compute loss, and update the network
-
-    def update_target_network(self, target_model, tau):
-        # Update the target network's weights (soft or hard update)
-
-    def sample_batch_from_memory(self, memory, batch_size):
-        # Sample a batch of experiences from memory
-
-    def train_step(self, memory, batch_size, target_model, tau):
-        # Perform a single training step using experience replay
+    def update_target_network(self, target_model):
+        for target_param, param in zip(target_model.parameters(), self.model.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)

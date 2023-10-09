@@ -32,7 +32,6 @@ class CustomCryptoTradingEnv(gym.Env):
         # Initialize state variables for SMA calculation
         self.sma_window = sma_window
         self.price_history = deque(maxlen=self.sma_window)
-        # Initialize SMA to zero
         self.sma = 0.0  
 
         # Initialize state variables for tracking trades and profit
