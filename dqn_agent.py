@@ -72,7 +72,7 @@ class DQNAgent:
         # Train the model using a single short memory (single step)
         self.trainer.train_step([(state, action, reward, next_state, done)])
 
-    def update_target_net(self):
+    def update_target_network(self):
         # Update the target network by copying weights from the policy network
         self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.trainer.update_target_network(self.target_net)
+

@@ -52,11 +52,8 @@ class QTrainer:
 
         # Calculate the smooth L1 loss
         loss = F.smooth_l1_loss(predicted_q_values, target_q_values.unsqueeze(1))
-        print(loss)
         
-
         return loss
-
 
         # MSE loss
         #loss = F.mse_loss(predicted_q_values, target_q_values)
@@ -82,6 +79,3 @@ class QTrainer:
         loss.backward()
         self.optimizer.step()
 
-    def update_target_network(self, target_model):
-        for target_param, param in zip(target_model.parameters(), self.model.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)

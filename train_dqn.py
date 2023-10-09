@@ -2,12 +2,16 @@ import numpy as np
 import pandas as pd
 from custom_env import CustomCryptoTradingEnv
 from dqn_agent import DQNAgent
+from plot_rewards import plot_profit
 
 """
 to-do:
     -(done) move hyperparameters to new file
     -(done) add stopping criteria instead of fixed 1000 episodes
     -(done) implement exploration rate decay for episilon
+    -fix save model
+    -actually use short memory
+    -implement BBP, SR
     -tune hyper parameters
     -ability to save trained model
     -add data logging as opposed to print(info)
@@ -37,13 +41,17 @@ def train():
     agent = DQNAgent(input_size=input_size, output_size=output_size)
 
     # Training loop
-    num_episodes = 1000
+    num_episodes = 10_000
     # Desired profit threshold
     target_profit = 1_000_000 
     # Minimum acceptable balance
     min_balance = 1_000 
     # Initial balance
     initial_balance = 10_000
+    target_update_frequency = 100
+
+    # Create an empty list to store episode rewards
+    episode_rewards = []
 
     for episode in range(num_episodes):
         observation = env.reset()
@@ -78,7 +86,17 @@ def train():
                 done = True
                 print('Stop condition met')
 
-            print(info)
+            print(f"Action Taken: {info['action']}, Number of Trades: {info['trades']}, Close Price: {info['close_price']} Total Profit: {info['total_profit']:.2f}")
+
+            # Append the episode reward to the list
+            episode_rewards.append(episode_reward)
+
+            # After a certain number of steps, update the target network
+            if episode % target_update_frequency == 0:
+                agent.update_target_network()
+
+            # After training, call the plotting function from the separate file
+            #plot_profit(episode_rewards) 
 
 if __name__ == '__main__':
     train()

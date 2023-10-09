@@ -144,10 +144,14 @@ class CustomCryptoTradingEnv(gym.Env):
         done = self.done
 
         info = {
+            # Action taken in episode
+            "action": action,
             # Number of trades made in the episode
             'trades': self.num_trades,  
             # Total profit obtained in the episode
             'total_profit': self.total_profit, 
+            # Close price
+            'close_price': close_price
         }
 
         return new_observation, reward, done, info
