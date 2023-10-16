@@ -10,10 +10,10 @@ class Actions(Enum):
     HOLD = 2  # Hold action
 
 class CustomCryptoTradingEnv(gym.Env):
-    def __init__(self, df, sma_window=24):
+    def __init__(self, df, sma_window=144):
         super(CustomCryptoTradingEnv, self).__init__()
         
-        num_time_steps = 1  # 1 hour (might change)
+        num_time_steps = 10  # 1 hour (might change)
         num_features = 3  # SMA, Sharpe Ratio, BBP
 
         # Define observation space

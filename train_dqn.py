@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from custom_env import CustomCryptoTradingEnv
 from dqn_agent import DQNAgent
+from dqn_model import DQN
 from plot_rewards import plot_profit
 
 """
@@ -20,20 +21,11 @@ to-do:
 
 def train():
     # Load the hourly data and create custom env
-    columns_to_load = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+    columns_to_load = ['timestamp', 'close']
     df = pd.read_csv('bitcoin_2017_to_2023.csv', usecols=columns_to_load, parse_dates=['timestamp'])
     df.set_index('timestamp', inplace=True)
 
-    # Resample the data to hourly intervals (OHLCV data)
-    hourly_df = df.resample('1H').agg({
-        'open': 'first',
-        'high': 'max',
-        'low': 'min',
-        'close': 'last',
-        'volume': 'sum'
-    })
-
-    env = CustomCryptoTradingEnv(hourly_df)
+    env = CustomCryptoTradingEnv(df.iloc[::-1])
 
     # Create and initialize DQN agent
     input_size = 3 # sma, sr, bbp
@@ -42,7 +34,7 @@ def train():
     agent = DQNAgent(input_size, output_size)
 
     # Training loop
-    num_episodes = 10_000
+    num_episodes = 100_000
     # Desired profit threshold
     target_profit = 1_000_000 
     # Minimum acceptable balance
@@ -58,9 +50,6 @@ def train():
         observation = env.reset()
         done = False
         episode_reward = 0.0
-        episode_sma = 0.0  # Initialize SMA for the episode
-        episode_sr = 0.0   # Initialize Sharpe Ratio for the episode
-        episode_bbp = 0.0  # Initialize BBP for the episode
         episode_balance = initial_balance  # Initialize episode balance
 
         # Update epsilon at the beginning of each episode
@@ -73,9 +62,6 @@ def train():
             # Take a step in the environment
             new_observation, reward, done, info = env.step(action)
 
-            # Extract SMA, Sharpe Ratio, and BBP from the new observation
-            new_sma, new_sr, new_bbp = new_observation
-
             # Store the experience in the agent's replay memory
             agent.remember(observation, action, reward, new_observation, done)
 
@@ -87,9 +73,6 @@ def train():
 
             episode_reward += reward
             episode_balance += reward
-            episode_sma = new_sma
-            episode_sr = new_sr
-            episode_bbp = new_bbp
 
             # Stopping condition: stop if the agent achieves the target profit or goes below the minimum balance
             if episode_reward >= target_profit or episode_balance < min_balance:
@@ -107,6 +90,8 @@ def train():
 
             # After training, call the plotting function from the separate file
             #plot_profit(episode_rewards) 
+
+    agent.save('models/my_dqn_model.pth')
 
 if __name__ == '__main__':
     train()
