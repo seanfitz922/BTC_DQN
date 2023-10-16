@@ -11,7 +11,7 @@ to-do:
     -(done) implement exploration rate decay for episilon
     -fix save model
     -actually use short memory
-    -implement BBP, SR
+    -(done) implement BBP, SR
     -tune hyper parameters
     -ability to save trained model
     -add data logging as opposed to print(info)
@@ -55,8 +55,12 @@ def train():
 
     for episode in range(num_episodes):
         observation = env.reset()
+        observation = env.reset()
         done = False
-        episode_reward = 0.0  # Initialize episode reward
+        episode_reward = 0.0
+        episode_sma = 0.0  # Initialize SMA for the episode
+        episode_sr = 0.0   # Initialize Sharpe Ratio for the episode
+        episode_bbp = 0.0  # Initialize BBP for the episode
         episode_balance = initial_balance  # Initialize episode balance
 
         # Update epsilon at the beginning of each episode
@@ -69,6 +73,9 @@ def train():
             # Take a step in the environment
             new_observation, reward, done, info = env.step(action)
 
+            # Extract SMA, Sharpe Ratio, and BBP from the new observation
+            new_sma, new_sr, new_bbp = new_observation
+
             # Store the experience in the agent's replay memory
             agent.remember(observation, action, reward, new_observation, done)
 
@@ -79,7 +86,10 @@ def train():
             observation = new_observation
 
             episode_reward += reward
-            episode_balance += reward 
+            episode_balance += reward
+            episode_sma = new_sma
+            episode_sr = new_sr
+            episode_bbp = new_bbp
 
             # Stopping condition: stop if the agent achieves the target profit or goes below the minimum balance
             if episode_reward >= target_profit or episode_balance < min_balance:
