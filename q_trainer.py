@@ -35,10 +35,10 @@ class QTrainer:
         states, actions, rewards, next_states, dones = zip(*batch)
 
         # Convert the elements of the batch to PyTorch tensors directly
-        states = torch.tensor(states, dtype=torch.float32)
+        states = torch.tensor(np.stack(states), dtype=torch.float32)
         actions = torch.tensor(actions, dtype=torch.int64)
         rewards = torch.tensor(rewards, dtype=torch.float32)
-        next_states = torch.tensor(next_states, dtype=torch.float32)
+        next_states = torch.tensor(np.stack(next_states), dtype=torch.float32)
         dones = torch.tensor(dones, dtype=torch.float32)
 
         q_values = self.model(states)
