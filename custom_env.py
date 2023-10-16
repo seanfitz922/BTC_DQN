@@ -11,8 +11,8 @@ class Actions(Enum):
 
 class CustomCryptoTradingEnv(gym.Env):
     def __init__(self, df, sma_window=24):
-        super(CustomCryptoTradingEnv, self).__init()
-
+        super(CustomCryptoTradingEnv, self).__init__()
+        
         num_time_steps = 1  # 1 hour (might change)
         num_features = 3  # SMA, Sharpe Ratio, BBP
 
@@ -69,9 +69,17 @@ class CustomCryptoTradingEnv(gym.Env):
         # Clear the price history
         self.price_history.clear()
 
-        # Generate and return the initial observation
-        initial_observation = self.df.iloc[self.current_step].values
+        # Calculate the initial values of SMA, SR, and BBP
+        initial_sma = self.calculate_sma(self.df['close'].values[:self.sma_window])
+        initial_returns = np.diff(self.df['close'].values[:self.sma_window])
+        initial_sr = self.calculate_sharpe_ratio(initial_returns)
+        initial_bbp = self.calculate_bbp(self.df['close'].values[:self.sma_window])
+
+        # Generate the initial observation based on SMA, SR, and BBP
+        initial_observation = np.array([initial_sma, initial_sr, initial_bbp])
+
         return initial_observation
+
 
     def execute_buy(self, close_price):
         # Execute the buy order

@@ -36,9 +36,10 @@ def train():
     env = CustomCryptoTradingEnv(hourly_df)
 
     # Create and initialize DQN agent
-    input_size = len(hourly_df.columns)  # open, high, low, close, volume
+    input_size = 3 # sma, sr, bbp
+    #input_size = len(hourly_df.column)  # open, high, low, close, volume
     output_size = env.action_space.n  # buy, sell, hold
-    agent = DQNAgent(input_size=input_size, output_size=output_size)
+    agent = DQNAgent(input_size, output_size)
 
     # Training loop
     num_episodes = 10_000
@@ -54,7 +55,6 @@ def train():
     episode_rewards = []
 
     for episode in range(num_episodes):
-        observation = env.reset()
         observation = env.reset()
         done = False
         episode_reward = 0.0
