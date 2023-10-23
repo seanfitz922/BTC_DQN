@@ -126,6 +126,16 @@ class CustomCryptoTradingEnv(gym.Env):
             # Ensure the agent is not already holding
             if not self.holding_asset:
                 self.execute_buy(close_price)
+            else:
+                # Check if the agent is already holding and evaluate the minimum profit threshold
+                potential_profit = (close_price - self.bought_price) / self.bought_price
+                if potential_profit >= 0.1:
+                    self.execute_buy(close_price)
+                else:
+                    # Apply a penalty for buying below the threshold 
+                    penalty = -0.25
+                    reward += penalty
+
         # Sell action
         elif action == Actions.SELL.value:
             # Ensure the agent is holding
