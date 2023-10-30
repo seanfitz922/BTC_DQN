@@ -10,11 +10,11 @@ class Actions(Enum):
     HOLD = 2  # Hold action
 
 class CustomCryptoTradingEnv(gym.Env):
-    def __init__(self, df, sma_window=144):
+    def __init__(self, df, sma_window=168):
         super(CustomCryptoTradingEnv, self).__init__()
         
-        num_time_steps = 10  # 1 hour (might change)
-        num_features = 3  # SMA, Sharpe Ratio, BBP
+        num_time_steps = 24  # 1 hour (might change)
+        num_features = 4  # SMA, Sharpe Ratio, BBP, close price
 
         # Define observation space
         self.observation_space = spaces.Box(low=0, high=1, shape=(num_time_steps, num_features))
@@ -74,9 +74,15 @@ class CustomCryptoTradingEnv(gym.Env):
         initial_returns = np.diff(self.df['close'].values[:self.sma_window])
         initial_sr = self.calculate_sharpe_ratio(initial_returns)
         initial_bbp = self.calculate_bbp(self.df['close'].values[:self.sma_window])
+        initial_close_price = self.df['close'].values[self.sma_window]
+
+        print("Type of initial_sma:", type(initial_sma))
+        print("Type of initial_sr:", type(initial_sr))
+        print("Type of initial_bbp:", type(initial_bbp))
+        print("Type of initial_close_price:", type(initial_close_price))
 
         # Generate the initial observation based on SMA, SR, and BBP
-        initial_observation = np.array([initial_sma, initial_sr, initial_bbp])
+        initial_observation = np.array([initial_sma, initial_sr, initial_bbp, self.df['close'][self.current_step]])
 
         return initial_observation
 
@@ -119,23 +125,13 @@ class CustomCryptoTradingEnv(gym.Env):
         bbp = self.calculate_bbp(self.df['close'].values)
 
         # Update the observation with additional indicators
-        observation = np.array([sma, sr, bbp])
+        observation = np.array([sma, sr, bbp, close_price])
 
         # Buy action
         if action == Actions.BUY.value:
             # Ensure the agent is not already holding
             if not self.holding_asset:
                 self.execute_buy(close_price)
-            else:
-                # Check if the agent is already holding and evaluate the minimum profit threshold
-                potential_profit = (close_price - self.bought_price) / self.bought_price
-                if potential_profit >= 0.1:
-                    self.execute_buy(close_price)
-                else:
-                    # Apply a penalty for buying below the threshold 
-                    penalty = -0.25
-                    reward += penalty
-
         # Sell action
         elif action == Actions.SELL.value:
             # Ensure the agent is holding

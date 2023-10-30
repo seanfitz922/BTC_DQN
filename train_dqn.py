@@ -20,15 +20,18 @@ to-do:
 """
 
 def train():
-    # Load the hourly data and create custom env
+    # Load the minute-level data and create custom env
     columns_to_load = ['timestamp', 'close']
     df = pd.read_csv('bitcoin_2017_to_2023.csv', usecols=columns_to_load, parse_dates=['timestamp'])
     df.set_index('timestamp', inplace=True)
 
+    # Resample the data to hourly frequency
+    df = df.resample('1H').agg({'close': 'last'}).ffill()
+    
     env = CustomCryptoTradingEnv(df.iloc[::-1])
 
     # Create and initialize DQN agent
-    input_size = 3 # sma, sr, bbp
+    input_size = 4 # sma, sr, bbp, close price
     #input_size = len(hourly_df.column)  # open, high, low, close, volume
     output_size = env.action_space.n  # buy, sell, hold
     agent = DQNAgent(input_size, output_size)
