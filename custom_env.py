@@ -138,7 +138,7 @@ class CustomCryptoTradingEnv(gym.Env):
             if self.holding_asset:
                 self.execute_sell(close_price)
                 # Profit as reward
-                reward = (close_price - self.bought_price) / self.bought_price
+                reward = np.clip((close_price - self.bought_price) / self.bought_price, -0.1, 0.05)
 
         # Hold action (no reward)
         elif action == Actions.HOLD.value:
