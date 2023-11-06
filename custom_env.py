@@ -22,6 +22,9 @@ class CustomCryptoTradingEnv(gym.Env):
         # Define action space using the enum class
         self.action_space = spaces.Discrete(len(Actions))
 
+        # Initialize the holding period
+        self.holding_period = 0
+
         # Store the dataset
         self.df = df
 
@@ -135,14 +138,17 @@ class CustomCryptoTradingEnv(gym.Env):
         # Sell action
         elif action == Actions.SELL.value:
             # Ensure the agent is holding
-            if self.holding_asset:
+            if self.holding_asset and self.holding_period >= 10:
                 self.execute_sell(close_price)
+                # Reset holding period after selling
+                self.holding_period = 0  
                 # Profit as reward
                 reward = np.clip((close_price - self.bought_price) / self.bought_price, -0.1, 0.05)
 
         # Hold action (no reward)
         elif action == Actions.HOLD.value:
             reward = 0.0
+            self.holding_period += 1
 
         # Update the current step
         self.current_step += 1
